@@ -79,9 +79,15 @@ def make_session():
 
 
 def get(session, params):
-    """Call the Search API, waiting out rate limits and retrying temporary errors."""
+    """Call the Search API, waiting out rate limits, network drops and server errors."""
     for attempt in range(6):
-        response = session.get(SEARCH_URL, params=params, timeout=30)
+        try:
+            response = session.get(SEARCH_URL, params=params, timeout=30)
+        except (requests.ConnectionError, requests.Timeout) as error:
+            wait = min(10 * 2 ** attempt, 120)
+            print(f"  network problem ({type(error).__name__}), retrying in {wait} s ...")
+            time.sleep(wait)
+            continue
         if response.status_code == 200:
             return response.json()
         if response.status_code in (403, 429):
@@ -149,15 +155,18 @@ def run_test(session):
         print(f"{repo}  {first:%Y-%m}  {cls:12} -> {len(items)} issues")
         for issue in items[:3]:
             print(f"    #{issue['number']}  [{issue.get('state_reason')}]  {issue['title'][:70]}")
-    print("\nTest OK. Now run the full download:  python data/collect.py")
+    print("\nTest OK. Now run the full download:  py data/collect.py")
 
 
 def collect(session, delay):
     """Download every (repo, month, class) combination and write them to OUTPUT."""
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    # Write to a temporary file first and rename it only at the very end, so an
+    # interrupted run never leaves an incomplete dataset under the real name.
+    partial = OUTPUT.with_name(OUTPUT.name + ".partial")
     collected_at = datetime.now(timezone.utc).isoformat()
     totals = {}
-    with gzip.open(OUTPUT, "wt", encoding="utf-8") as f:
+    with gzip.open(partial, "wt", encoding="utf-8") as f:
         for repo in REPOS:
             counts = {cls: 0 for cls in CLASSES}
             for first, last in months(START_MONTH, END_MONTH):
@@ -169,6 +178,7 @@ def collect(session, delay):
                     time.sleep(delay)
             print(f"{repo:24} completed: {counts['completed']:5d}   not_planned: {counts['not_planned']:5d}")
             totals[repo] = counts
+    partial.replace(OUTPUT)
 
     n_completed = sum(c["completed"] for c in totals.values())
     n_rejected = sum(c["not_planned"] for c in totals.values())
