@@ -70,7 +70,28 @@ python data/collect.py                  # full download, about 10–15 minutes
 GitHub data changes over time (issues get edited, reopened or deleted), so a new run may return slightly different issues. The committed raw file is the exact dataset used in this project (collected October 2026).
 
 ## Preprocessing
-_To be completed (Role 2): `preprocessing/clean.py`, cleaning steps, filtering counts, train/val/test split._
+`preprocessing/clean.py` turns the raw file into clean, leak-free splits; every step and its counts are documented in [`preprocessing/README.md`](preprocessing/README.md).
+
+```bash
+py preprocessing/clean.py      # python3 on macOS/Linux
+```
+
+1. Keep issues whose close reason still matches the label.
+2. Remove issues written by bot accounts and by two CI accounts registered as normal users (`typescript-bot`, `fluttergithubbot`).
+3. Build the model input from **title + body only** and clean it: remove template comments and empty template fields; replace code blocks, links, images, collapsed `<details>` blocks and long stack traces with `[CODE]`, `[URL]`, `[IMAGE]`, `[DETAILS]` and `[TRACE]` tokens.
+4. Remove near-empty issues (under 20 characters).
+5. Remove duplicates before splitting: exact duplicate texts, and titles within a repository that differ only in numbers.
+6. Split 80 / 10 / 10, stratified on repository + label, `random_state = 42`.
+
+Cleaning funnel: **10,399 raw → 9,761 clean** issues (53.4% `completed`, 46.6% `not_planned`).
+
+| Split | Rows | completed (`label = 0`) | not_planned (`label = 1`) |
+|---|---:|---:|---:|
+| `data/cleaned/train.csv` | 7,808 | 4,172 | 3,636 |
+| `data/cleaned/val.csv` | 976 | 521 | 455 |
+| `data/cleaned/test.csv` | 977 | 522 | 455 |
+
+Columns: `id`, `repo`, `created_month`, `text`, `label`. Hyperparameters are chosen on `val`; `test` is used once, for the final benchmark.
 
 ## Models
 _To be completed (Roles 3 and 4): baselines and new methods._

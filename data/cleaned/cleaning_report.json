@@ -1,0 +1,187 @@
+{
+  "steps": [
+    {
+      "step": "0_raw",
+      "rows": 10399,
+      "removed": 0,
+      "completed": 5562,
+      "not_planned": 4837,
+      "note": "raw file as downloaded"
+    },
+    {
+      "step": "1_consistent_label",
+      "rows": 10399,
+      "removed": 0,
+      "completed": 5562,
+      "not_planned": 4837,
+      "note": "state_reason equals query_class (drops issues reopened or re-closed differently)"
+    },
+    {
+      "step": "2_no_bots",
+      "rows": 10390,
+      "removed": 9,
+      "completed": 5554,
+      "not_planned": 4836,
+      "note": "user_type != \"Bot\""
+    },
+    {
+      "step": "3_no_automation_accounts",
+      "rows": 10188,
+      "removed": 202,
+      "completed": 5489,
+      "not_planned": 4699,
+      "note": "removed accounts: fluttergithubbot, typescript-bot"
+    },
+    {
+      "step": "4_5_build_and_clean_text",
+      "rows": 10188,
+      "removed": 0,
+      "completed": 5489,
+      "not_planned": 4699,
+      "note": "text = clean(title + body); no rows removed"
+    },
+    {
+      "step": "6_no_near_empty",
+      "rows": 10130,
+      "removed": 58,
+      "completed": 5478,
+      "not_planned": 4652,
+      "note": "cleaned text has at least 20 characters"
+    },
+    {
+      "step": "7a_no_duplicate_text",
+      "rows": 10018,
+      "removed": 112,
+      "completed": 5399,
+      "not_planned": 4619,
+      "note": "exact duplicate cleaned text, keep earliest (12 duplicate groups had mixed labels)"
+    },
+    {
+      "step": "7b_no_duplicate_title",
+      "rows": 9761,
+      "removed": 257,
+      "completed": 5215,
+      "not_planned": 4546,
+      "note": "same repo + same title (lower-cased, numbers masked), keep earliest"
+    }
+  ],
+  "label_encoding": {
+    "completed": 0,
+    "not_planned": 1
+  },
+  "random_state": 42,
+  "splits": {
+    "train": {
+      "rows": 7808,
+      "completed": 4172,
+      "not_planned": 3636,
+      "median_chars": 690,
+      "median_words": 106,
+      "sha256": "7ce798955ffd2b0342379090ffccc85d3f5ef6171811e24634209c4873b566ce"
+    },
+    "val": {
+      "rows": 976,
+      "completed": 521,
+      "not_planned": 455,
+      "median_chars": 684,
+      "median_words": 108,
+      "sha256": "b147e4b1d3f74010a25f086e3805c21bab232f6371666ffb02db1b206841f437"
+    },
+    "test": {
+      "rows": 977,
+      "completed": 522,
+      "not_planned": 455,
+      "median_chars": 695,
+      "median_words": 105,
+      "sha256": "15b7ff56d5dae554941e0784eb8f4891edbdfcef155ed35fba35f92a3037ef0d"
+    }
+  },
+  "per_repo": {
+    "flutter/flutter": {
+      "train": {
+        "completed": 603,
+        "not_planned": 703
+      },
+      "val": {
+        "completed": 76,
+        "not_planned": 88
+      },
+      "test": {
+        "completed": 75,
+        "not_planned": 88
+      }
+    },
+    "home-assistant/core": {
+      "train": {
+        "completed": 762,
+        "not_planned": 764
+      },
+      "val": {
+        "completed": 95,
+        "not_planned": 95
+      },
+      "test": {
+        "completed": 96,
+        "not_planned": 96
+      }
+    },
+    "kubernetes/kubernetes": {
+      "train": {
+        "completed": 764,
+        "not_planned": 594
+      },
+      "val": {
+        "completed": 95,
+        "not_planned": 74
+      },
+      "test": {
+        "completed": 96,
+        "not_planned": 74
+      }
+    },
+    "microsoft/TypeScript": {
+      "train": {
+        "completed": 605,
+        "not_planned": 642
+      },
+      "val": {
+        "completed": 76,
+        "not_planned": 81
+      },
+      "test": {
+        "completed": 75,
+        "not_planned": 80
+      }
+    },
+    "microsoft/vscode": {
+      "train": {
+        "completed": 738,
+        "not_planned": 715
+      },
+      "val": {
+        "completed": 92,
+        "not_planned": 89
+      },
+      "test": {
+        "completed": 92,
+        "not_planned": 90
+      }
+    },
+    "numpy/numpy": {
+      "train": {
+        "completed": 700,
+        "not_planned": 218
+      },
+      "val": {
+        "completed": 87,
+        "not_planned": 28
+      },
+      "test": {
+        "completed": 88,
+        "not_planned": 27
+      }
+    }
+  },
+  "median_chars_all": 689,
+  "median_words_all": 106
+}
