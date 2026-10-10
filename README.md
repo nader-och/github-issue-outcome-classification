@@ -94,13 +94,66 @@ Cleaning funnel: **10,399 raw → 9,761 clean** issues (53.4% `completed`, 46.6%
 Columns: `id`, `repo`, `created_month`, `text`, `label`. Hyperparameters are chosen on `val`; `test` is used once, for the final benchmark.
 
 ## Models
-_To be completed (Roles 3 and 4): baselines and new methods._
+
+Every model sees only the cleaned **title + body** (`text` column). All hyperparameters are chosen by macro-F1 on `val`; every setting tried is logged in [`results/classical_val_scores.csv`](results/classical_val_scores.csv).
+
+### Classical baselines (Role 3) – `training/classical.py`
+
+| Model | Features | Chosen setting |
+|---|---|---|
+| `majority` | none (always predicts the most common class) | – |
+| `naive_bayes` | Multinomial Naive Bayes on word TF-IDF 1–2-grams | alpha = 0.03 |
+| `logreg_word` | Logistic Regression on word TF-IDF 1–2-grams | C = 1 |
+| `logreg_word_char_stats` | Logistic Regression on word 1–2-grams + character 3–5-grams + statistical features | C = 0.3 |
+| `linear_svm` | Linear SVM (LinearSVC) on the same features as above | C = 0.03 |
+
+- **Word TF-IDF:** 1–2-grams, sublinear term frequency; the `[CODE]`, `[URL]`, `[IMAGE]`, `[TRACE]` and `[DETAILS]` tokens are kept as single tokens.
+- **Character TF-IDF:** 3–5-grams within word boundaries, robust to typos and code identifiers.
+- **Statistical features:** text length, word count, title length, counts of each placeholder token, question marks, exclamation marks, version numbers and template headings; log-scaled, then standardised.
+- Vectorizers and scalers are fitted on `train` only. The SVM's scores are turned into probabilities with Platt scaling fitted on `val`, which does not change its predictions or ranking.
+
+### Neural and transformer models (Role 4)
+
+_To be completed by Role 4._
 
 ## Benchmark
-_To be completed (Role 3): metric choice, results table, analysis._
+
+`benchmark/run_benchmark.py` scores every file in `results/predictions/` (one per model, test set only) in the same way and writes [`results/benchmark.md`](results/benchmark.md) and `results/benchmark.csv`.
+
+**Primary metric: macro-F1**, the plain average of the F1 score of each class. Both classes count equally, so a model cannot score well by favouring the larger class, and the metric stays honest on skewed repositories such as numpy (76% `completed`). Accuracy, F1 per class, ROC-AUC and macro-F1 per repository are also reported. The 95% confidence interval comes from 1,000 bootstrap resamples of the test set and shows whether a gap between two models is larger than the noise.
+
+### Results (test set, 977 issues)
+
+| Rank | Model | Type | Macro-F1 | 95% CI | Accuracy | ROC-AUC |
+|---|---|---|---|---|---|---|
+| 1 | `naive_bayes` | baseline | **0.652** | 0.620–0.682 | 0.652 | 0.700 |
+| 2 | `linear_svm` | baseline | 0.647 | 0.618–0.678 | 0.652 | 0.702 |
+| 3 | `logreg_word_char_stats` | baseline | 0.646 | 0.615–0.676 | 0.651 | 0.704 |
+| 4 | `logreg_word` | baseline | 0.641 | 0.610–0.672 | 0.646 | 0.714 |
+| 5 | `majority` | baseline | 0.348 | 0.334–0.363 | 0.534 | – |
+
+Per-repository scores are in [`results/benchmark.md`](results/benchmark.md).
+
+### Analysis
+
+- **The classical models are tied.** All four learned models score about 0.65 macro-F1, far above the majority baseline (0.35), but their confidence intervals overlap. The mandatory Naive Bayes is as strong as the rest, and the extra character and statistical features did not help.
+- **What the model learns** ([`results/analysis/lr_top_words.csv`](results/analysis/lr_top_words.csv)): feature-request words such as *use case*, *proposal*, *want* and *request* push towards `not_planned`; links, screenshots and words such as *failing* and *test* push towards `completed`.
+- **Cross-repository test** ([`results/cross_repo.csv`](results/cross_repo.csv)): when `logreg_word_char_stats` is trained on 5 repositories and tested on the 6th, macro-F1 drops from about 0.62 to 0.41–0.63. Part of what the model learns is repository-specific (project names such as *flutter* or *numpy* are among its strongest words) rather than a general signal of rejection.
+- **Errors:** the most confidently misclassified test issues, with links, are in [`results/analysis/lr_errors.csv`](results/analysis/lr_errors.csv).
 
 ## How to run the full pipeline
-_To be completed: one command per step, in order._
+
+Run every command from the repository root. On macOS/Linux use `python3` instead of `py`.
+
+```
+py -m pip install -r requirements.txt          # 1. install the packages
+py data/collect.py                             # 2. (optional, slow) re-download the raw data; needs GITHUB_TOKEN
+py preprocessing/clean.py                      # 3. clean and split -> data/cleaned/
+py training/classical.py --cross-repo          # 4. classical models -> results/predictions/ (about 5 minutes)
+py benchmark/run_benchmark.py                  # 5. benchmark table -> results/benchmark.md
+```
+
+Step 2 can be skipped: the raw dataset used in this project is already committed. Every script uses `random_state = 42`, so a rerun gives the same results.
 
 ## Repository structure
 ```
