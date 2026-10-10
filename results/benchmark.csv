@@ -1,0 +1,6 @@
+model,type,macro_f1,macro_f1_ci_low,macro_f1_ci_high,accuracy,f1_completed,f1_not_planned,roc_auc,f1_flutter,f1_core,f1_kubernetes,f1_TypeScript,f1_vscode,f1_numpy,description
+naive_bayes,baseline,0.6518,0.6201,0.6815,0.652,0.6607,0.6429,0.7005,0.6043,0.6354,0.7207,0.5818,0.5974,0.4633,"Multinomial Naive Bayes, word TF-IDF 1-2-grams"
+linear_svm,baseline,0.6474,0.6181,0.6777,0.652,0.6875,0.6074,0.702,0.6244,0.619,0.7274,0.5871,0.6098,0.4633,"Linear SVM (Platt-calibrated), word + char + statistical features"
+logreg_word_char_stats,baseline,0.6463,0.6155,0.6761,0.651,0.6869,0.6058,0.7042,0.6257,0.619,0.7274,0.5806,0.6098,0.4633,"Logistic Regression, word + char 3-5-grams + statistical features"
+logreg_word,baseline,0.6412,0.6102,0.6718,0.6459,0.682,0.6005,0.7137,0.6144,0.5845,0.7426,0.5677,0.6316,0.4594,"Logistic Regression, word TF-IDF 1-2-grams"
+majority,baseline,0.3482,0.3345,0.3627,0.5343,0.6965,0.0,,0.3151,0.3333,0.3609,0.3261,0.3358,0.4335,Always predicts the majority class (no learning)

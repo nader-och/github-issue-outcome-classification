@@ -1,0 +1,7 @@
+held_out_repo,train_rows,test_rows,cross_repo_macro_f1
+flutter/flutter,6502,163,0.4083
+home-assistant/core,6282,192,0.4956
+kubernetes/kubernetes,6450,170,0.6279
+microsoft/TypeScript,6561,155,0.4086
+microsoft/vscode,6355,182,0.533
+numpy/numpy,6890,115,0.5469
