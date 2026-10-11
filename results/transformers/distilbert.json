@@ -1,0 +1,19 @@
+{
+  "model": "distilbert-base-uncased",
+  "name": "distilbert",
+  "max_length": 256,
+  "epochs": 5,
+  "learning_rate": 2e-05,
+  "batch_size": 16,
+  "fp16": true,
+  "seed": 42,
+  "val_macro_f1_per_epoch": [
+    0.6492,
+    0.6161,
+    0.6505,
+    0.6504,
+    0.6442
+  ],
+  "best_epoch": 3,
+  "gpu": "Tesla T4"
+}

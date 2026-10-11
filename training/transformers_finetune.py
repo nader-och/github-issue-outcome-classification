@@ -89,11 +89,14 @@ def load_tokenizer(checkpoint):
 
 def load_model(checkpoint):
     # A new 2-class classification head is placed on top of the pretrained encoder.
+    # .float(): some checkpoints (e.g. DeBERTa-v3) are stored in half precision (FP16).
+    # Mixed-precision training needs the weights themselves in full precision (FP32),
+    # otherwise it fails with "Attempting to unscale FP16 gradients".
     return AutoModelForSequenceClassification.from_pretrained(
         checkpoint, num_labels=2,
         id2label={0: "completed", 1: "not_planned"},
         label2id={"completed": 0, "not_planned": 1},
-    )
+    ).float()
 
 
 def compute_metrics(eval_pred):

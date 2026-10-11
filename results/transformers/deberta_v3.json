@@ -1,0 +1,19 @@
+{
+  "model": "microsoft/deberta-v3-base",
+  "name": "deberta_v3",
+  "max_length": 256,
+  "epochs": 5,
+  "learning_rate": 2e-05,
+  "batch_size": 16,
+  "fp16": true,
+  "seed": 42,
+  "val_macro_f1_per_epoch": [
+    0.6158,
+    0.5943,
+    0.6519,
+    0.6714,
+    0.6631
+  ],
+  "best_epoch": 4,
+  "gpu": "Tesla T4"
+}
