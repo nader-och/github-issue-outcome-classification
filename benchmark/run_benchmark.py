@@ -43,8 +43,8 @@ MODEL_INFO = {
     # Role 4 adds its models here, e.g.
     # "glove_cnn":   ("baseline", "GloVe 100-d + CNN"),
     # "bilstm":      ("baseline", "GloVe 100-d + BiLSTM"),
-    # "distilbert":  ("baseline", "Fine-tuned distilbert-base-uncased"),
-    # "deberta_v3":  ("new method", "Fine-tuned microsoft/deberta-v3-base"),
+    "distilbert":  ("baseline", "Fine-tuned distilbert-base-uncased"),
+    "deberta_v3":  ("new method", "Fine-tuned microsoft/deberta-v3-base"),
 }
 
 REQUIRED_COLUMNS = ["id", "label", "pred", "prob_not_planned"]
