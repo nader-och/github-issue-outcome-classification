@@ -112,9 +112,17 @@ Every model sees only the cleaned **title + body** (`text` column). All hyperpar
 - **Statistical features:** text length, word count, title length, counts of each placeholder token, question marks, exclamation marks, version numbers and template headings; log-scaled, then standardised.
 - Vectorizers and scalers are fitted on `train` only. The SVM's scores are turned into probabilities with Platt scaling fitted on `val`, which does not change its predictions or ranking.
 
-### Neural and transformer models (Role 4)
+### Neural and transformer models (Role 4) – `training/transformers_finetune.py`
 
-_To be completed by Role 4._
+| Model | Type | Checkpoint | Best epoch (val) |
+|---|---|---|---|
+| `distilbert` | baseline | `distilbert-base-uncased` (the checkpoint used in class) | 3 of 5 |
+| `deberta_v3` | **new method** | `microsoft/deberta-v3-base` | 4 of 5 |
+
+- Both models are fine-tuned with **identical settings**, so the comparison is fair: first 256 tokens of title + body, learning rate 2e-5, batch size 16, 5 epochs, 10% warm-up, weight decay 0.01, mixed precision (FP16), seed 42.
+- After every epoch the model is scored on `val`; the epoch with the best val macro-F1 is kept and used once on `test`. Settings and val scores per epoch are saved in [`results/transformers/`](results/transformers/).
+- **Why DeBERTa-v3 as the new method:** it was not covered in class. It improves on BERT with *disentangled attention* (a word's content and its position are encoded separately) and an *ELECTRA-style pre-training* task (detecting replaced tokens instead of predicting masked ones), and it is one of the strongest base-size encoders on text-classification benchmarks.
+- Trained on Google Colab (Tesla T4 GPU): about 5 minutes for DistilBERT and 18 minutes for DeBERTa-v3. GPU training is not perfectly deterministic, so a rerun can differ slightly; the committed predictions are the reference.
 
 ## Benchmark
 
@@ -124,19 +132,23 @@ _To be completed by Role 4._
 
 ### Results (test set, 977 issues)
 
-| Rank | Model | Type | Macro-F1 | 95% CI | Accuracy | ROC-AUC |
-|---|---|---|---|---|---|---|
-| 1 | `naive_bayes` | baseline | **0.652** | 0.620–0.682 | 0.652 | 0.700 |
-| 2 | `linear_svm` | baseline | 0.647 | 0.618–0.678 | 0.652 | 0.702 |
-| 3 | `logreg_word_char_stats` | baseline | 0.646 | 0.615–0.676 | 0.651 | 0.704 |
-| 4 | `logreg_word` | baseline | 0.641 | 0.610–0.672 | 0.646 | 0.714 |
-| 5 | `majority` | baseline | 0.348 | 0.334–0.363 | 0.534 | – |
+| Rank | Model | Type | Macro-F1 | 95% CI | Accuracy | F1 not_planned | ROC-AUC |
+|---|---|---|---|---|---|---|---|
+| 1 | `naive_bayes` | baseline | **0.652** | 0.620–0.682 | 0.652 | 0.643 | 0.700 |
+| 2 | `distilbert` | baseline | 0.649 | 0.620–0.678 | 0.650 | 0.637 | 0.709 |
+| 3 | `linear_svm` | baseline | 0.647 | 0.618–0.678 | 0.652 | 0.607 | 0.702 |
+| 4 | `logreg_word_char_stats` | baseline | 0.646 | 0.615–0.676 | 0.651 | 0.606 | 0.704 |
+| 5 | `logreg_word` | baseline | 0.641 | 0.610–0.672 | 0.646 | 0.600 | 0.714 |
+| 6 | `deberta_v3` | new method | 0.641 | 0.610–0.668 | 0.642 | 0.620 | 0.708 |
+| 7 | `majority` | baseline | 0.348 | 0.334–0.363 | 0.534 | 0.000 | – |
 
-Per-repository scores are in [`results/benchmark.md`](results/benchmark.md).
+Per-repository scores and F1 for the `completed` class are in [`results/benchmark.md`](results/benchmark.md).
 
 ### Analysis
 
-- **The classical models are tied.** All four learned models score about 0.65 macro-F1, far above the majority baseline (0.35), but their confidence intervals overlap. The mandatory Naive Bayes is as strong as the rest, and the extra character and statistical features did not help.
+- **All learned models are statistically tied.** Every model scores 0.64–0.65 macro-F1, far above the majority baseline (0.35), and all their confidence intervals overlap. Neither fine-tuned transformers nor extra hand-made features beat the mandatory Naive Bayes. The limit seems to be the information in the text itself: whether an issue is rejected also depends on things the text does not show (maintainers' priorities, project roadmap, duplicates elsewhere).
+- **The new method did not win on test.** DeBERTa-v3 had the best validation score of any model (0.671) but scored 0.641 on test; with about 1,000 issues per split, a gap of 2–3 points between val and test is within the noise.
+- **Transformers find rejected issues more evenly.** Both transformers have a higher F1 on the `not_planned` class (0.62–0.64) than the logistic regression and SVM models (0.60–0.61). DeBERTa-v3 is also the best model on numpy (0.61 against 0.46–0.53 for the others), but numpy has only 115 test issues, so this is not conclusive.
 - **What the model learns** ([`results/analysis/lr_top_words.csv`](results/analysis/lr_top_words.csv)): feature-request words such as *use case*, *proposal*, *want* and *request* push towards `not_planned`; links, screenshots and words such as *failing* and *test* push towards `completed`.
 - **Cross-repository test** ([`results/cross_repo.csv`](results/cross_repo.csv)): when `logreg_word_char_stats` is trained on 5 repositories and tested on the 6th, macro-F1 drops from about 0.62 to 0.41–0.63. Part of what the model learns is repository-specific (project names such as *flutter* or *numpy* are among its strongest words) rather than a general signal of rejection.
 - **Errors:** the most confidently misclassified test issues, with links, are in [`results/analysis/lr_errors.csv`](results/analysis/lr_errors.csv).
@@ -150,10 +162,22 @@ py -m pip install -r requirements.txt          # 1. install the packages
 py data/collect.py                             # 2. (optional, slow) re-download the raw data; needs GITHUB_TOKEN
 py preprocessing/clean.py                      # 3. clean and split -> data/cleaned/
 py training/classical.py --cross-repo          # 4. classical models -> results/predictions/ (about 5 minutes)
-py benchmark/run_benchmark.py                  # 5. benchmark table -> results/benchmark.md
+py benchmark/run_benchmark.py                  # 6. benchmark table -> results/benchmark.md
 ```
 
-Step 2 can be skipped: the raw dataset used in this project is already committed. Every script uses `random_state = 42`, so a rerun gives the same results.
+**Step 5, the transformers, needs a GPU** (we used Google Colab with a T4). In a Colab notebook:
+
+```
+!git clone https://github.com/nader-och/github-issue-outcome-classification.git
+%cd github-issue-outcome-classification
+!pip install -q sentencepiece protobuf
+!python training/transformers_finetune.py --model distilbert-base-uncased --name distilbert --epochs 5
+!python training/transformers_finetune.py --model microsoft/deberta-v3-base --name deberta_v3 --epochs 5
+```
+
+Then copy `results/predictions/distilbert.csv`, `results/predictions/deberta_v3.csv` and `results/transformers/` back into the repository before step 6.
+
+Step 2 can be skipped: the raw dataset used in this project is already committed. The classical scripts use `random_state = 42` and give identical results on every rerun; the transformer runs use seed 42 but can differ slightly because GPU training is not fully deterministic.
 
 ## Repository structure
 ```
